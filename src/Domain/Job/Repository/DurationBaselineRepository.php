@@ -34,4 +34,10 @@ interface DurationBaselineRepository
      * @return list<int>
      */
     public function sampleDurationsFor(string $jobClass, DateTimeImmutable $since): array;
+
+    /** Delete all baseline records. Returns number of deleted rows. */
+    public function deleteAllBaselines(): int;
+
+    /** Delete all anomaly records. Returns number of deleted rows. */
+    public function deleteAllAnomalies(): int;
 }

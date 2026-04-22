@@ -68,7 +68,12 @@ use Yammi\JobsMonitor\Infrastructure\Alert\Job\DispatchAlertsJob;
 use Yammi\JobsMonitor\Infrastructure\Alert\Throttle\CacheAlertThrottle;
 use Yammi\JobsMonitor\Infrastructure\Classifier\PatternBasedFailureClassifier;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\CheckWorkerHeartbeatsCommand;
+use Yammi\JobsMonitor\Infrastructure\Console\Command\ClearMetricsCommand;
+use Yammi\JobsMonitor\Infrastructure\Console\Command\ClearQueueCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\DetectLateScheduledTasksCommand;
+use Yammi\JobsMonitor\Infrastructure\Console\Command\ForgetJobCommand;
+use Yammi\JobsMonitor\Infrastructure\Console\Command\KillJobsByClassCommand;
+use Yammi\JobsMonitor\Infrastructure\Console\Command\PurgeStuckJobsCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\RefreshDurationBaselinesCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\TransferDataCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\PruneJobRecordsCommand;
@@ -589,6 +594,11 @@ final class JobsMonitorServiceProvider extends ServiceProvider
                 DetectLateScheduledTasksCommand::class,
                 RefreshDurationBaselinesCommand::class,
                 CheckWorkerHeartbeatsCommand::class,
+                ClearQueueCommand::class,
+                ForgetJobCommand::class,
+                KillJobsByClassCommand::class,
+                PurgeStuckJobsCommand::class,
+                ClearMetricsCommand::class,
             ]);
         }
 

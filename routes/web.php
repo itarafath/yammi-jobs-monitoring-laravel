@@ -18,6 +18,7 @@ use Yammi\JobsMonitor\Infrastructure\Http\Controller\ScheduledTasksController;
 use Yammi\JobsMonitor\Infrastructure\Http\Controller\SettingsController;
 use Yammi\JobsMonitor\Infrastructure\Http\Controller\StatsController;
 use Yammi\JobsMonitor\Infrastructure\Http\Controller\WorkersController;
+use Yammi\JobsMonitor\Infrastructure\Http\Controller\Api\QueueControlApiController;
 
 Route::get('/', DashboardController::class)->name('jobs-monitor.dashboard');
 Route::get('/stats', StatsController::class)->name('jobs-monitor.stats');
@@ -112,6 +113,20 @@ Route::get('/settings/playground', [PlaygroundController::class, 'index'])
 Route::post('/settings/playground/execute', [PlaygroundController::class, 'execute'])
     ->middleware('throttle:30,1')
     ->name('jobs-monitor.settings.playground.execute');
+
+Route::post('/queue/clear', [QueueControlApiController::class, 'clearQueue'])
+    ->name('jobs-monitor.queue.clear');
+Route::post('/jobs/{uuid}/forget', [QueueControlApiController::class, 'forgetJob'])
+    ->where('uuid', '[0-9a-fA-F-]+')
+    ->name('jobs-monitor.jobs.forget');
+Route::post('/jobs/kill-class', [QueueControlApiController::class, 'killByClass'])
+    ->name('jobs-monitor.jobs.kill-class');
+Route::get('/jobs/purge-stuck/preview', [QueueControlApiController::class, 'purgeStuckPreview'])
+    ->name('jobs-monitor.jobs.purge-stuck.preview');
+Route::post('/jobs/purge-stuck', [QueueControlApiController::class, 'purgeStuck'])
+    ->name('jobs-monitor.jobs.purge-stuck');
+Route::post('/settings/metrics/clear', [QueueControlApiController::class, 'clearMetrics'])
+    ->name('jobs-monitor.settings.metrics.clear');
 
 Route::get('/{uuid}/{attempt}', JobDetailController::class)
     ->where('attempt', '[0-9]+')

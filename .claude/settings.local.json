@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/opt/homebrew/bin/pdftoppm -png -r 150 -f 160 -l 167 \"/Users/arafath/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/laravel-queues-in-action-dark.pdf\" /tmp/book-workers)",
+      "Bash(/opt/homebrew/bin/pdftoppm -png -r 150 -f 207 -l 213 \"/Users/arafath/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/laravel-queues-in-action-dark.pdf\" /tmp/book-failure)",
+      "Bash(/opt/homebrew/bin/pdftoppm -png -r 150 -f 195 -l 206 \"/Users/arafath/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/laravel-queues-in-action-dark.pdf\" /tmp/book-reliable)",
+      "Bash(/opt/homebrew/bin/pdftoppm -png -r 150 -f 182 -l 201 \"/Users/arafath/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/laravel-queues-in-action-dark.pdf\" /tmp/book-horizon)",
+      "Bash(/opt/homebrew/bin/pdftoppm -png -r 150 -f 41 -l 53 \"/Users/arafath/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/laravel-queues-in-action-dark.pdf\" /tmp/book-cancel)",
+      "Bash(/opt/homebrew/bin/pdftoppm -png -r 150 -f 66 -l 88 \"/Users/arafath/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/laravel-queues-in-action-dark.pdf\" /tmp/book-unique)",
+      "Bash(/opt/homebrew/bin/pdftoppm -png -r 150 -f 54 -l 65 \"/Users/arafath/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/laravel-queues-in-action-dark.pdf\" /tmp/book-conf)",
+      "Bash(/opt/homebrew/bin/pdftoppm -png -r 150 -f 148 -l 160 \"/Users/arafath/Library/Mobile Documents/iCloud~com~apple~iBooks/Documents/laravel-queues-in-action-dark.pdf\" /tmp/book-dispatch)"
+    ]
+  }
+}

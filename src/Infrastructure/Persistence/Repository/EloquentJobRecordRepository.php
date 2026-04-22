@@ -657,4 +657,63 @@ final class EloquentJobRecordRepository implements JobRecordRepository
             ->where('outcome_processed', 0)
             ->count();
     }
+
+    public function deleteByQueue(string $queue, ?string $connection = null): int
+    {
+        $query = JobRecordModel::query()->where('queue', $queue);
+
+        if ($connection !== null && $connection !== '') {
+            $query->where('connection', $connection);
+        }
+
+        return $query->delete();
+    }
+
+    public function deleteByClass(string $jobClass, ?JobStatus $statusFilter = null): int
+    {
+        $query = JobRecordModel::query()->where('job_class', $jobClass);
+
+        if ($statusFilter !== null) {
+            $query->where('status', $statusFilter->value);
+        }
+
+        return $query->delete();
+    }
+
+    public function countStuckProcessing(int $olderThanSeconds): int
+    {
+        $cutoff = new \DateTimeImmutable("-{$olderThanSeconds} seconds");
+
+        return JobRecordModel::query()
+            ->where('status', JobStatus::Processing->value)
+            ->where('started_at', '<', $cutoff)
+            ->count();
+    }
+
+    public function markStuckAsFailed(int $olderThanSeconds, string $exceptionMessage): int
+    {
+        $cutoff = new \DateTimeImmutable("-{$olderThanSeconds} seconds");
+        $now = new \DateTimeImmutable;
+
+        return JobRecordModel::query()
+            ->where('status', JobStatus::Processing->value)
+            ->where('started_at', '<', $cutoff)
+            ->update([
+                'status' => JobStatus::Failed->value,
+                'finished_at' => $now,
+                'exception' => $exceptionMessage,
+            ]);
+    }
+
+    public function deleteAll(): int
+    {
+        return JobRecordModel::query()->delete();
+    }
+
+    public function deleteBefore(\DateTimeImmutable $before): int
+    {
+        return JobRecordModel::query()
+            ->where('started_at', '<', $before)
+            ->delete();
+    }
 }

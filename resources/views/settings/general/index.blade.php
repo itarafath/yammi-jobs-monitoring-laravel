@@ -67,7 +67,84 @@
             ])
         </div>
     </form>
+
+    {{-- Danger zone --}}
+    <div class="rounded-xl border border-destructive/30 bg-card overflow-hidden">
+        <div class="flex items-center gap-3 px-5 py-3.5 border-b border-destructive/20 bg-destructive/5">
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-destructive/15 text-destructive ring-1 ring-inset ring-destructive/20">
+                <i data-lucide="triangle-alert" class="text-[16px]"></i>
+            </span>
+            <div>
+                <h2 class="text-sm font-semibold text-destructive">Danger Zone</h2>
+                <p class="text-xs text-muted-foreground">Irreversible operations. These cannot be undone.</p>
+            </div>
+        </div>
+        <div class="divide-y divide-border">
+            {{-- Clear duration baselines & anomalies --}}
+            <div class="flex items-center justify-between gap-4 px-5 py-4">
+                <div>
+                    <p class="text-sm font-medium">Clear metrics</p>
+                    <p class="text-xs text-muted-foreground mt-0.5">Delete all duration baselines and anomaly records. Baselines rebuild automatically on the next scheduled run.</p>
+                </div>
+                <button type="button"
+                        onclick="__jmClearMetrics({{ json_encode(route('jobs-monitor.settings.metrics.clear')) }}, null)"
+                        class="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-md border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors">
+                    <i data-lucide="bar-chart-2" class="text-[13px]"></i>
+                    Clear metrics
+                </button>
+            </div>
+            {{-- Clear job records (with period picker) --}}
+            <div class="flex items-center justify-between gap-4 px-5 py-4">
+                <div>
+                    <p class="text-sm font-medium">Clear job records</p>
+                    <p class="text-xs text-muted-foreground mt-0.5">Delete job monitoring records for a given period. Also clears metrics.</p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <select id="jm-clear-period"
+                            class="h-8 rounded-md border border-input bg-card text-xs text-foreground px-2 focus:outline-none focus:ring-2 focus:ring-ring">
+                        <option value="24h">Last 24h</option>
+                        <option value="7d">Last 7 days</option>
+                        <option value="30d">Last 30 days</option>
+                        <option value="all">All records</option>
+                    </select>
+                    <button type="button"
+                            onclick="__jmClearMetrics({{ json_encode(route('jobs-monitor.settings.metrics.clear')) }}, document.getElementById('jm-clear-period').value)"
+                            class="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-md bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors">
+                        <i data-lucide="trash-2" class="text-[13px]"></i>
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+function __jmClearMetrics(url, period) {
+    var label = period ? 'job records (' + period + ') and metrics' : 'all duration baselines and anomalies';
+    window.__jmOpenConfirm({
+        action: url,
+        method: 'POST',
+        title: 'Clear ' + label + '?',
+        body: 'This permanently deletes the selected data and cannot be undone.',
+        submitLabel: 'Clear',
+        icon: 'trash-2',
+        variant: 'danger',
+    });
+    var form = document.querySelector('[data-jm-confirm-form]');
+    if (form) {
+        var el = form.querySelector('input[name="period"]');
+        if (el) el.remove();
+        if (period) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'period';
+            input.value = period;
+            form.appendChild(input);
+        }
+    }
+}
+</script>
 
 {{-- Reset confirmation modal --}}
 <div id="jm-reset-modal"
@@ -112,6 +189,8 @@
         </div>
     </div>
 </div>
+
+@include('jobs-monitor::partials.confirm-modal')
 
 <script>
 (function () {

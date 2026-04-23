@@ -9,3 +9,4 @@
 /sandbox/
 .DS_Store
 *.cache
+.claude

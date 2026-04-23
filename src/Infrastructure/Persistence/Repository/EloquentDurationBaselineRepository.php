@@ -100,4 +100,14 @@ final class EloquentDurationBaselineRepository implements DurationBaselineReposi
 
         return array_values($durations);
     }
+
+    public function deleteAllBaselines(): int
+    {
+        return (int) DurationBaselineModel::query()->delete();
+    }
+
+    public function deleteAllAnomalies(): int
+    {
+        return (int) DurationAnomalyModel::query()->delete();
+    }
 }

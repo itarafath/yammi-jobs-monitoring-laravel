@@ -10,16 +10,19 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use Yammi\JobsMonitor\Domain\Job\Repository\JobRecordRepository;
 use Yammi\JobsMonitor\Domain\Worker\Repository\WorkerRepository;
 use Yammi\JobsMonitor\Presentation\ViewModel\WorkersViewModel;
 
 /** @internal */
 final class WorkersController extends Controller
 {
-    public function __invoke(Request $request, WorkerRepository $workers, ConfigRepository $config): View
+    public function __invoke(Request $request, WorkerRepository $workers, ConfigRepository $config, JobRecordRepository $jobs): View
     {
         return view('jobs-monitor::workers', [
             'vm' => $this->buildVm($request, $workers, $config),
+            'queues' => $jobs->distinctQueues(),
+            'connections' => $jobs->distinctConnections(),
         ]);
     }
 
@@ -27,10 +30,12 @@ final class WorkersController extends Controller
      * Returns only the inner content partial (no layout) so the JS
      * auto-refresh can swap the entire block without a full page load.
      */
-    public function summary(Request $request, WorkerRepository $workers, ConfigRepository $config): Response
+    public function summary(Request $request, WorkerRepository $workers, ConfigRepository $config, JobRecordRepository $jobs): Response
     {
         $html = view('jobs-monitor::partials.workers-content', [
             'vm' => $this->buildVm($request, $workers, $config),
+            'queues' => $jobs->distinctQueues(),
+            'connections' => $jobs->distinctConnections(),
         ])->render();
 
         return new Response($html, 200, ['Content-Type' => 'text/html']);

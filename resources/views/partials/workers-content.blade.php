@@ -48,6 +48,51 @@
     };
 @endphp
 
+{{-- Queue control panel --}}
+@php $queues = $queues ?? []; $connections = $connections ?? []; @endphp
+@if(count($queues) > 0)
+<section class="rounded-xl border border-border bg-card overflow-hidden">
+    <div class="flex items-center gap-3 px-5 py-3.5 border-b border-border">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+            <i data-lucide="layers" class="text-[16px]"></i>
+        </span>
+        <div class="flex-1">
+            <h2 class="text-sm font-semibold">Queues</h2>
+            <p class="text-xs text-muted-foreground">Clear pending jobs from a queue across all connections</p>
+        </div>
+    </div>
+    <table class="w-full text-sm table-fixed">
+        <colgroup>
+            <col>
+            <col class="w-12">
+        </colgroup>
+        <thead class="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+            <tr>
+                <th class="px-5 py-2.5 text-left font-medium">Queue name</th>
+                <th class="px-3 py-2.5 text-right font-medium"></th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-border">
+            @foreach($queues as $queueName)
+                <tr class="{{ $loop->even ? 'bg-muted/40' : 'bg-card' }}">
+                    <td class="px-5 py-2.5">
+                        <code class="rounded bg-muted px-1.5 py-0.5 text-[11px] font-mono">{{ $queueName }}</code>
+                    </td>
+                    <td class="px-3 py-2.5 text-right" onclick="event.stopPropagation()">
+                        <button type="button"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 transition-colors focus:outline-none focus:ring-2 focus:ring-ring"
+                                title="Clear queue"
+                                onclick="__jmClearQueue({{ json_encode($queueName) }}, {{ json_encode(route('jobs-monitor.queue.clear')) }})">
+                            <i data-lucide="trash-2" class="text-[15px]"></i>
+                        </button>
+                    </td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+</section>
+@endif
+
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
     <div class="rounded-xl border border-border bg-card p-4 shadow-xs">
         <div class="flex items-center justify-between">
@@ -82,6 +127,31 @@
         <p class="mt-1 text-xs text-muted-foreground">Queues with configured expectations.</p>
     </div>
 </div>
+
+<script>
+function __jmClearQueue(queueName, url) {
+    window.__jmOpenConfirm({
+        action: url,
+        method: 'POST',
+        title: 'Clear queue "' + queueName + '"?',
+        body: 'Removes all pending jobs from this queue and deletes their monitoring records. Running jobs will continue to completion. This cannot be undone.',
+        submitLabel: 'Clear queue',
+        icon: 'trash-2',
+        variant: 'danger',
+    });
+    // Inject queue field into the shared confirm form after opening
+    var form = document.querySelector('[data-jm-confirm-form]');
+    if (form) {
+        var existing = form.querySelector('input[name="queue"]');
+        if (existing) existing.remove();
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'queue';
+        input.value = queueName;
+        form.appendChild(input);
+    }
+}
+</script>
 
 {{-- Block 1: Alive workers --}}
 <section class="rounded-xl border border-border bg-card overflow-hidden">

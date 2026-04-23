@@ -313,4 +313,45 @@ interface JobRecordRepository
      * the window. Used by the zero-processed alert trigger.
      */
     public function countZeroProcessedSince(\DateTimeImmutable $since): int;
+
+    /**
+     * Delete all records for a given queue, optionally scoped to a connection.
+     *
+     * @return int Number of deleted rows
+     */
+    public function deleteByQueue(string $queue, ?string $connection = null): int;
+
+    /**
+     * Delete all records for a given job class, optionally scoped to a status.
+     *
+     * @return int Number of deleted rows
+     */
+    public function deleteByClass(string $jobClass, ?JobStatus $statusFilter = null): int;
+
+    /**
+     * Count processing records whose started_at is older than $olderThanSeconds.
+     * Used to preview how many jobs a purge will affect.
+     */
+    public function countStuckProcessing(int $olderThanSeconds): int;
+
+    /**
+     * Mark all processing records older than $olderThanSeconds as failed
+     * with the given exception message. Returns number of rows updated.
+     */
+    public function markStuckAsFailed(int $olderThanSeconds, string $exceptionMessage): int;
+
+    /**
+     * Delete all job records. Used by the clear-metrics operation.
+     *
+     * @return int Number of deleted rows
+     */
+    public function deleteAll(): int;
+
+    /**
+     * Delete records older than $since, regardless of status.
+     * Used by clear-metrics with a period filter.
+     *
+     * @return int Number of deleted rows
+     */
+    public function deleteBefore(\DateTimeImmutable $before): int;
 }

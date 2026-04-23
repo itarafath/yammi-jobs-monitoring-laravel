@@ -11,34 +11,31 @@ final class ClearQueueCommand extends Command
 {
     /** @var string */
     protected $signature = 'jobs-monitor:clear-queue
-        {queue : The name of the queue to clear}
-        {--connection= : The queue connection name (uses default when omitted)}
-        {--dry-run : Preview how many monitoring records would be deleted without making changes}';
+        {queue : The name of the queue to clear}';
 
     /** @var string */
-    protected $description = 'Delete all jobs from the specified queue and remove their monitoring records.';
+    protected $description = 'Clear all pending jobs from a Horizon queue.';
 
     public function handle(ClearQueueAction $action): int
     {
         $queue = (string) $this->argument('queue');
-        $connection = $this->option('connection') !== null ? (string) $this->option('connection') : null;
 
-        if ($this->option('dry-run')) {
-            $this->info(sprintf('[dry-run] Would clear queue "%s"%s.', $queue, $connection ? " on connection \"{$connection}\"" : ''));
+        $result = $action($queue);
 
-            return self::SUCCESS;
-        }
+        if ($result['horizon_cleared'] === true) {
+            $this->info(sprintf('Horizon queue "%s" cleared.', $result['queue']));
+            if ($result['purged']) {
+                $this->info('Horizon job metadata purged.');
+            }
+        } elseif ($result['horizon_cleared'] === false) {
+            $this->error('Horizon queue clear failed.');
 
-        $result = $action($queue, $connection);
-
-        if ($result['driver_error'] !== null) {
-            $this->warn(sprintf('Queue driver clear failed: %s', $result['driver_error']));
-            $this->warn('Monitoring records were still cleaned up.');
+            return self::FAILURE;
         } else {
-            $this->info('Queue driver cleared successfully.');
-        }
+            $this->error('Horizon is not installed.');
 
-        $this->info(sprintf('Deleted %d monitoring record(s) for queue "%s".', $result['monitor_deleted'], $queue));
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }

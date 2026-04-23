@@ -17,8 +17,11 @@ use Yammi\JobsMonitor\Infrastructure\Http\Controller\PlaygroundController;
 use Yammi\JobsMonitor\Infrastructure\Http\Controller\ScheduledTasksController;
 use Yammi\JobsMonitor\Infrastructure\Http\Controller\SettingsController;
 use Yammi\JobsMonitor\Infrastructure\Http\Controller\StatsController;
+use Yammi\JobsMonitor\Infrastructure\Http\Controller\PendingJobDetailController;
+use Yammi\JobsMonitor\Infrastructure\Http\Controller\PendingJobsController;
 use Yammi\JobsMonitor\Infrastructure\Http\Controller\WorkersController;
 use Yammi\JobsMonitor\Infrastructure\Http\Controller\Api\QueueControlApiController;
+use Yammi\JobsMonitor\Infrastructure\Http\Controller\HorizonController;
 
 Route::get('/', DashboardController::class)->name('jobs-monitor.dashboard');
 Route::get('/stats', StatsController::class)->name('jobs-monitor.stats');
@@ -68,8 +71,17 @@ Route::post('/scheduled/{id}/retry', [ScheduledTasksController::class, 'retry'])
 Route::get('/anomalies', DurationAnomaliesController::class)->name('jobs-monitor.anomalies');
 Route::post('/anomalies/refresh-baselines', [DurationAnomaliesController::class, 'refreshBaselines'])
     ->name('jobs-monitor.anomalies.refresh-baselines');
+Route::get('/pending', PendingJobsController::class)->name('jobs-monitor.pending');
+Route::get('/pending/summary', [PendingJobsController::class, 'summary'])->name('jobs-monitor.pending.summary');
+Route::get('/pending/{jobId}', PendingJobDetailController::class)->name('jobs-monitor.pending.detail');
+Route::post('/pending/{jobId}/delete', [PendingJobDetailController::class, 'delete'])->name('jobs-monitor.pending.delete');
+Route::post('/pending/{jobId}/force-stop', [PendingJobDetailController::class, 'forceStop'])->name('jobs-monitor.pending.force-stop');
 Route::get('/workers', WorkersController::class)->name('jobs-monitor.workers');
 Route::get('/workers/summary', [WorkersController::class, 'summary'])->name('jobs-monitor.workers.summary');
+Route::post('/workers/horizon/pause', [HorizonController::class, 'pause'])->name('jobs-monitor.workers.horizon.pause');
+Route::post('/workers/horizon/continue', [HorizonController::class, 'continue'])->name('jobs-monitor.workers.horizon.continue');
+Route::post('/workers/horizon/supervisor/pause', [HorizonController::class, 'pauseSupervisor'])->name('jobs-monitor.workers.horizon.supervisor.pause');
+Route::post('/workers/horizon/supervisor/continue', [HorizonController::class, 'continueSupervisor'])->name('jobs-monitor.workers.horizon.supervisor.continue');
 Route::get('/settings', SettingsController::class)->name('jobs-monitor.settings');
 Route::get('/settings/database', [DatabaseSettingsController::class, 'index'])
     ->name('jobs-monitor.settings.database');
@@ -119,8 +131,6 @@ Route::post('/queue/clear', [QueueControlApiController::class, 'clearQueue'])
 Route::post('/jobs/{uuid}/forget', [QueueControlApiController::class, 'forgetJob'])
     ->where('uuid', '[0-9a-fA-F-]+')
     ->name('jobs-monitor.jobs.forget');
-Route::post('/jobs/kill-class', [QueueControlApiController::class, 'killByClass'])
-    ->name('jobs-monitor.jobs.kill-class');
 Route::get('/jobs/purge-stuck/preview', [QueueControlApiController::class, 'purgeStuckPreview'])
     ->name('jobs-monitor.jobs.purge-stuck.preview');
 Route::post('/jobs/purge-stuck', [QueueControlApiController::class, 'purgeStuck'])

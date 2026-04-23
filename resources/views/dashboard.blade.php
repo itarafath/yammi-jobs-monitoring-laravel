@@ -482,12 +482,6 @@
                                             ],
                                         ],
                                     ])
-                                    <button type="button"
-                                            class="inline-flex h-8 px-2 items-center gap-1 text-xs rounded-md text-destructive hover:bg-destructive/10 transition-colors"
-                                            title="Kill all {{ $job['short_class'] }}"
-                                            onclick="__jmKillClass({{ json_encode($job['job_class']) }}, {{ json_encode($job['short_class']) }}, {{ json_encode(route('jobs-monitor.jobs.kill-class')) }})">
-                                        <i data-lucide="x-circle" class="text-[13px]"></i>
-                                    </button>
                                 @endif
                             </td>
                         </tr>
@@ -580,30 +574,6 @@
     @include('jobs-monitor::partials.confirm-modal')
 
     <script>
-    function __jmKillClass(fullClass, shortClass, url) {
-        window.__jmOpenConfirm({
-            action: url,
-            method: 'POST',
-            title: 'Kill all ' + shortClass + '?',
-            body: 'Deletes all monitoring records for this job class. Running jobs will finish but won\'t update the dashboard.',
-            submitLabel: 'Kill all',
-            icon: 'x-circle',
-            variant: 'danger',
-        });
-        var form = document.querySelector('[data-jm-confirm-form]');
-        if (form) {
-            ['class', 'status'].forEach(function(n) {
-                var el = form.querySelector('input[name="' + n + '"]');
-                if (el) el.remove();
-            });
-            var input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'class';
-            input.value = fullClass;
-            form.appendChild(input);
-        }
-    }
-
     function __jmPurgeStuck(purgeUrl, previewUrl) {
         fetch(previewUrl, { headers: { 'Accept': 'application/json' } })
             .then(function(r) { return r.json(); })

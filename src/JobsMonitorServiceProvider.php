@@ -53,6 +53,7 @@ use Yammi\JobsMonitor\Domain\Failure\Repository\FailureGroupRepository;
 use Yammi\JobsMonitor\Domain\Job\Contract\FailureClassifier;
 use Yammi\JobsMonitor\Domain\Job\Repository\DurationBaselineRepository;
 use Yammi\JobsMonitor\Domain\Job\Repository\JobRecordRepository;
+use Yammi\JobsMonitor\Domain\Job\Repository\PendingJobRepository;
 use Yammi\JobsMonitor\Domain\Scheduler\Repository\ScheduledTaskRunRepository;
 use Yammi\JobsMonitor\Domain\Settings\Repository\AlertSettingsRepository;
 use Yammi\JobsMonitor\Domain\Settings\Repository\BuiltInRuleStateRepository;
@@ -72,7 +73,6 @@ use Yammi\JobsMonitor\Infrastructure\Console\Command\ClearMetricsCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\ClearQueueCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\DetectLateScheduledTasksCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\ForgetJobCommand;
-use Yammi\JobsMonitor\Infrastructure\Console\Command\KillJobsByClassCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\PurgeStuckJobsCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\RefreshDurationBaselinesCommand;
 use Yammi\JobsMonitor\Infrastructure\Console\Command\TransferDataCommand;
@@ -91,11 +91,13 @@ use Yammi\JobsMonitor\Infrastructure\Listener\OutcomeReportSubscriber;
 use Yammi\JobsMonitor\Infrastructure\Listener\SchedulerSubscriber;
 use Yammi\JobsMonitor\Infrastructure\Listener\WorkerHeartbeatSubscriber;
 use Yammi\JobsMonitor\Infrastructure\Metrics\NullMetricsDriver;
+use Yammi\JobsMonitor\Infrastructure\Persistence\Repository\DatabasePendingJobRepository;
 use Yammi\JobsMonitor\Infrastructure\Persistence\Repository\EloquentDurationBaselineRepository;
 use Yammi\JobsMonitor\Infrastructure\Persistence\Repository\EloquentFailureGroupRepository;
 use Yammi\JobsMonitor\Infrastructure\Persistence\Repository\EloquentJobRecordRepository;
 use Yammi\JobsMonitor\Infrastructure\Persistence\Repository\EloquentScheduledTaskRunRepository;
 use Yammi\JobsMonitor\Infrastructure\Persistence\Repository\EloquentWorkerRepository;
+use Yammi\JobsMonitor\Infrastructure\Persistence\Repository\HorizonPendingJobRepository;
 use Yammi\JobsMonitor\Infrastructure\Persistence\Transfer\EloquentMonitorDataTransferrer;
 use Yammi\JobsMonitor\Infrastructure\Queue\LaravelQueueDispatcher;
 use Yammi\JobsMonitor\Infrastructure\Settings\Persistence\Repository\EloquentAlertSettingsRepository;
@@ -130,6 +132,17 @@ final class JobsMonitorServiceProvider extends ServiceProvider
         $appConfig->set('jobs-monitor', array_replace_recursive($defaults, $current));
 
         $this->app->bind(JobRecordRepository::class, EloquentJobRecordRepository::class);
+        $this->app->bind(PendingJobRepository::class, function () {
+            $horizon = new HorizonPendingJobRepository(
+                $this->app->make(\Illuminate\Contracts\Redis\Factory::class),
+            );
+
+            if ($horizon->isAvailable()) {
+                return $horizon;
+            }
+
+            return new DatabasePendingJobRepository;
+        });
         $this->app->bind(FailureGroupRepository::class, EloquentFailureGroupRepository::class);
         $this->app->bind(ScheduledTaskRunRepository::class, EloquentScheduledTaskRunRepository::class);
         $this->app->bind(DurationBaselineRepository::class, EloquentDurationBaselineRepository::class);
@@ -596,7 +609,6 @@ final class JobsMonitorServiceProvider extends ServiceProvider
                 CheckWorkerHeartbeatsCommand::class,
                 ClearQueueCommand::class,
                 ForgetJobCommand::class,
-                KillJobsByClassCommand::class,
                 PurgeStuckJobsCommand::class,
                 ClearMetricsCommand::class,
             ]);

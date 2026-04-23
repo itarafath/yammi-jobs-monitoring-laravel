@@ -20,9 +20,12 @@ final class WorkersController extends Controller
     public function __invoke(Request $request, WorkerRepository $workers, ConfigRepository $config, JobRecordRepository $jobs): View
     {
         return view('jobs-monitor::workers', [
-            'vm' => $this->buildVm($request, $workers, $config),
-            'queues' => $jobs->distinctQueues(),
-            'connections' => $jobs->distinctConnections(),
+            'vm'                => $this->buildVm($request, $workers, $config),
+            'queues'            => $this->horizonQueues($config, $jobs),
+            'connections'       => $jobs->distinctConnections(),
+            'horizonInstalled'  => $this->horizonInstalled(),
+            'horizonStatus'     => $this->horizonStatus(),
+            'horizonSupervisors'=> $this->horizonSupervisors(),
         ]);
     }
 
@@ -34,7 +37,7 @@ final class WorkersController extends Controller
     {
         $html = view('jobs-monitor::partials.workers-content', [
             'vm' => $this->buildVm($request, $workers, $config),
-            'queues' => $jobs->distinctQueues(),
+            'queues' => $this->horizonQueues($config, $jobs),
             'connections' => $jobs->distinctConnections(),
         ])->render();
 
@@ -56,6 +59,99 @@ final class WorkersController extends Controller
             deadPage: max(1, (int) $request->query('dpage', '1')),
             coveragePage: max(1, (int) $request->query('ppage', '1')),
         );
+    }
+
+    private function horizonInstalled(): bool
+    {
+        return class_exists('Laravel\Horizon\Horizon');
+    }
+
+    /**
+     * @return list<array{name: string, status: string}>
+     */
+    private function horizonSupervisors(): array
+    {
+        if (! $this->horizonInstalled()) {
+            return [];
+        }
+
+        try {
+            /** @var object $repo */
+            $repo = app('Laravel\Horizon\Contracts\SupervisorRepository');
+            $supervisors = $repo->all();
+
+            $mapped = array_map(static function (object $s): array {
+                $parts = explode(':', $s->name, 2);
+
+                return [
+                    'name'         => $s->name,
+                    'machine_id'   => $parts[0] ?? $s->name,
+                    'display_name' => $parts[1] ?? $s->name,
+                    'status'       => $s->status ?? 'unknown',
+                ];
+            }, $supervisors);
+
+            usort($mapped, static fn (array $a, array $b) => strcmp($a['display_name'], $b['display_name']));
+
+            return $mapped;
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
+    private function horizonStatus(): string
+    {
+        if (! $this->horizonInstalled()) {
+            return 'unknown';
+        }
+
+        try {
+            /** @var object $repo */
+            $repo = app('Laravel\Horizon\Contracts\MasterSupervisorRepository');
+            $masters = $repo->all();
+
+            if (empty($masters)) {
+                return 'inactive';
+            }
+
+            foreach ($masters as $master) {
+                if (($master->status ?? '') !== 'paused') {
+                    return 'running';
+                }
+            }
+
+            return 'paused';
+        } catch (\Throwable) {
+            return 'unknown';
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function horizonQueues(ConfigRepository $config, JobRecordRepository $jobs): array
+    {
+        if (! $this->horizonInstalled()) {
+            return $jobs->distinctQueues();
+        }
+
+        /** @var array<string, array{queue?: list<string>}> $defaults */
+        $defaults = (array) $config->get('horizon.defaults', []);
+
+        $queues = [];
+        foreach ($defaults as $worker) {
+            $workerQueues = (array) ($worker['queue'] ?? []);
+            foreach ($workerQueues as $queue) {
+                if (is_string($queue) && $queue !== '') {
+                    $queues[$queue] = true;
+                }
+            }
+        }
+
+        $list = array_keys($queues);
+        sort($list);
+
+        return $list;
     }
 
     /**

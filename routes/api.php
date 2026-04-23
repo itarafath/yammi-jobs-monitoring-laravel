@@ -121,8 +121,6 @@ Route::post('/queue/clear', [QueueControlApiController::class, 'clearQueue'])
 Route::post('/jobs/{uuid}/forget', [QueueControlApiController::class, 'forgetJob'])
     ->where('uuid', '[0-9a-fA-F-]+')
     ->name('jobs-monitor.api.jobs.forget');
-Route::post('/jobs/kill-class', [QueueControlApiController::class, 'killByClass'])
-    ->name('jobs-monitor.api.jobs.kill-class');
 Route::get('/jobs/purge-stuck/preview', [QueueControlApiController::class, 'purgeStuckPreview'])
     ->name('jobs-monitor.api.jobs.purge-stuck.preview');
 Route::post('/jobs/purge-stuck', [QueueControlApiController::class, 'purgeStuck'])

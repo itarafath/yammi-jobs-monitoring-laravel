@@ -308,6 +308,7 @@
                                 'icon' => 'activity',
                                 'children' => [
                                     ['route' => 'jobs-monitor.scheduled', 'label' => 'Scheduled', 'icon' => 'calendar-clock'],
+                                    ['route' => 'jobs-monitor.pending',  'label' => 'Pending',    'icon' => 'clock'],
                                     ['route' => 'jobs-monitor.anomalies', 'label' => 'Anomalies', 'icon' => 'trending-down'],
                                     ['route' => 'jobs-monitor.workers',   'label' => 'Workers',   'icon' => 'cpu'],
                                 ],
@@ -413,6 +414,18 @@
             </div>
         </div>
     </nav>
+
+    @if(session('status') || session('error'))
+    <div id="jm-flash"
+         class="fixed bottom-5 right-5 z-50 flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg border max-w-sm text-sm animate-slide-down
+                {{ session('error') ? 'bg-destructive/10 border-destructive/20 text-destructive' : 'bg-success/10 border-success/20 text-success' }}">
+        <i data-lucide="{{ session('error') ? 'alert-circle' : 'check-circle' }}" class="text-[16px] shrink-0 mt-0.5"></i>
+        <span>{{ session('error') ?? session('status') }}</span>
+        <button onclick="this.closest('#jm-flash').remove()" class="ml-auto shrink-0 opacity-60 hover:opacity-100 transition-opacity">
+            <i data-lucide="x" class="text-[14px]"></i>
+        </button>
+    </div>
+    @endif
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fade-in">
         @yield('content')
@@ -648,11 +661,11 @@
             });
         })();
 
-        // Intercept form submissions inside kebab menus — AJAX + error modal
+        // Intercept form submissions inside kebab menus and confirm modal — AJAX + error modal
         (function () {
             document.addEventListener('submit', function (e) {
                 var form = e.target;
-                if (!form || !form.closest('[data-jm-kebab]')) return;
+                if (!form || (!form.closest('[data-jm-kebab]') && !form.matches('[data-jm-confirm-form]'))) return;
                 e.preventDefault();
 
                 var fd = new FormData(form);
@@ -663,6 +676,7 @@
                     redirect: 'follow',
                 }).then(function (res) {
                     if (res.ok) {
+                        if (window.__jmCloseConfirm) window.__jmCloseConfirm();
                         return res.text().then(function (text) {
                             try {
                                 JSON.parse(text);

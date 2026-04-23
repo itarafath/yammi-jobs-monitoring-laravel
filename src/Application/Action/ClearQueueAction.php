@@ -5,48 +5,52 @@ declare(strict_types=1);
 namespace Yammi\JobsMonitor\Application\Action;
 
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
-use Yammi\JobsMonitor\Domain\Job\Repository\JobRecordRepository;
+use Illuminate\Support\Arr;
 
 /**
- * Clears all pending jobs from a queue in both the actual queue driver
- * and the monitoring records table.
+ * Clears all pending jobs from a Horizon queue.
  *
- * Queue::clear() is not supported by all drivers (e.g. SQS). When the
- * driver throws, we surface the driver error but still clean up the
- * monitoring records so the dashboard stays consistent.
+ * Mirrors Horizon's own ClearCommand logic:
+ *  1. Resolves the queue connection from horizon.defaults config
+ *  2. Purges job metadata via Horizon's JobRepository
+ *  3. Clears the actual Redis queue via QueueManager
  */
 final class ClearQueueAction
 {
-    public function __construct(
-        private readonly JobRecordRepository $repository,
-        private readonly QueueFactory $queue,
-    ) {}
+    public function __construct(private readonly QueueFactory $queue) {}
 
     /**
-     * @return array{driver_cleared: bool, driver_error: string|null, monitor_deleted: int}
+     * @return array{horizon_cleared: bool|null, queue: string, purged: int}
      */
-    public function __invoke(string $queue, ?string $connection = null): array
+    public function __invoke(string $queue): array
     {
-        $driverCleared = false;
-        $driverError = null;
-
-        try {
-            $conn = $connection !== null && $connection !== ''
-                ? $this->queue->connection($connection)
-                : $this->queue->connection();
-
-            $conn->clear($queue);
-            $driverCleared = true;
-        } catch (\Throwable $e) {
-            $driverError = $e->getMessage();
+        if (! class_exists(\Laravel\Horizon\Horizon::class)) {
+            return ['horizon_cleared' => null, 'queue' => $queue, 'purged' => 0];
         }
 
-        $monitorDeleted = $this->repository->deleteByQueue($queue, $connection);
+        try {
+            /** @var string $connection */
+            $connection = Arr::first(config('horizon.defaults', []))['connection'] ?? 'redis';
 
-        return [
-            'driver_cleared' => $driverCleared,
-            'driver_error' => $driverError,
-            'monitor_deleted' => $monitorDeleted,
-        ];
+            // Purge Horizon job metadata (same as horizon:clear step 1)
+            $purged = 0;
+            try {
+                /** @var object $jobRepository */
+                $jobRepository = app(\Laravel\Horizon\Contracts\JobRepository::class);
+                if (method_exists($jobRepository, 'purge')) {
+                    $jobRepository->purge($queue);
+                    $purged = 1;
+                }
+            } catch (\Throwable) {
+                // purge is best-effort
+            }
+
+            // Clear the actual Redis queue (same as horizon:clear step 2)
+            $this->queue->connection($connection)->clear($queue);
+
+            return ['horizon_cleared' => true, 'queue' => $queue, 'purged' => $purged];
+        } catch (\Throwable) {
+            return ['horizon_cleared' => false, 'queue' => $queue, 'purged' => 0];
+        }
     }
 }

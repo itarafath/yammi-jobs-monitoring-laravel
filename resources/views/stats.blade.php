@@ -189,6 +189,7 @@
                     <col class="hidden lg:table-column w-[110px]">
                     <col class="hidden xl:table-column w-[110px]">
                     <col class="hidden md:table-column w-[80px]">
+                    <col class="w-[48px]">
                 </colgroup>
                 <thead>
                     <tr class="bg-muted/40 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -227,4 +228,5 @@
             </table>
         </div>
     @endif
+
 @endsection

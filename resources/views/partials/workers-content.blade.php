@@ -51,7 +51,12 @@
 {{-- Queue control panel --}}
 @php $queues = $queues ?? []; $connections = $connections ?? []; @endphp
 @if(count($queues) > 0)
-<section class="rounded-xl border border-border bg-card overflow-hidden">
+@php
+    $queuePerPage = 10;
+    $queueTotal = count($queues);
+    $queueLastPage = (int) ceil($queueTotal / $queuePerPage);
+@endphp
+<section class="rounded-xl border border-border bg-card overflow-hidden" data-jm-queue-pagination>
     <div class="flex items-center gap-3 px-5 py-3.5 border-b border-border">
         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-muted-foreground">
             <i data-lucide="layers" class="text-[16px]"></i>
@@ -74,7 +79,7 @@
         </thead>
         <tbody class="divide-y divide-border">
             @foreach($queues as $queueName)
-                <tr class="{{ $loop->even ? 'bg-muted/40' : 'bg-card' }}">
+                <tr data-jm-queue-row data-jm-queue-idx="{{ $loop->index }}" class="{{ $loop->even ? 'bg-muted/40' : 'bg-card' }}">
                     <td class="px-5 py-2.5">
                         <code class="rounded bg-muted px-1.5 py-0.5 text-[11px] font-mono">{{ $queueName }}</code>
                     </td>
@@ -90,6 +95,22 @@
             @endforeach
         </tbody>
     </table>
+    @if($queueLastPage > 1)
+    <div class="px-5 py-3.5 border-t border-border flex flex-wrap items-center justify-between gap-3" data-jm-queue-pager data-jm-queue-per-page="{{ $queuePerPage }}" data-jm-queue-last-page="{{ $queueLastPage }}">
+        <div class="text-xs text-muted-foreground">
+            Page <span class="font-medium text-foreground tabular-nums" data-jm-queue-current>1</span>
+            of <span class="font-medium text-foreground tabular-nums">{{ $queueLastPage }}</span>
+        </div>
+        <div class="flex items-center gap-1">
+            <button type="button" data-jm-queue-prev class="inline-flex items-center justify-center h-8 min-w-8 px-2.5 text-xs font-medium rounded-md border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground transition-colors gap-1" disabled>
+                <i data-lucide="chevron-left" class="text-[13px]"></i> Prev
+            </button>
+            <button type="button" data-jm-queue-next class="inline-flex items-center justify-center h-8 min-w-8 px-2.5 text-xs font-medium rounded-md border border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground transition-colors gap-1">
+                Next <i data-lucide="chevron-right" class="text-[13px]"></i>
+            </button>
+        </div>
+    </div>
+    @endif
 </section>
 @endif
 
@@ -129,12 +150,40 @@
 </div>
 
 <script>
+(function () {
+    var section = document.querySelector('[data-jm-queue-pagination]');
+    if (!section) return;
+    var perPage = parseInt(section.querySelector('[data-jm-queue-pager]').dataset.jmQueuePerPage, 10) || 10;
+    var lastPage = parseInt(section.querySelector('[data-jm-queue-pager]').dataset.jmQueueLastPage, 10) || 1;
+    var rows = section.querySelectorAll('[data-jm-queue-row]');
+    var currentSpan = section.querySelector('[data-jm-queue-current]');
+    var prevBtn = section.querySelector('[data-jm-queue-prev]');
+    var nextBtn = section.querySelector('[data-jm-queue-next]');
+    var currentPage = 1;
+
+    function render() {
+        var start = (currentPage - 1) * perPage;
+        var end = start + perPage;
+        rows.forEach(function (row, i) {
+            row.style.display = (i >= start && i < end) ? '' : 'none';
+        });
+        if (currentSpan) currentSpan.textContent = currentPage;
+        if (prevBtn) prevBtn.disabled = (currentPage <= 1);
+        if (nextBtn) nextBtn.disabled = (currentPage >= lastPage);
+    }
+
+    if (prevBtn) prevBtn.addEventListener('click', function () { if (currentPage > 1) { currentPage--; render(); } });
+    if (nextBtn) nextBtn.addEventListener('click', function () { if (currentPage < lastPage) { currentPage++; render(); } });
+
+    render();
+})();
+
 function __jmClearQueue(queueName, url) {
     window.__jmOpenConfirm({
         action: url,
         method: 'POST',
-        title: 'Clear queue "' + queueName + '"?',
-        body: 'Removes all pending jobs from this queue and deletes their monitoring records. Running jobs will continue to completion. This cannot be undone.',
+        title: 'Clear Horizon queue "' + queueName + '"?',
+        body: 'Runs horizon:clear to remove all pending jobs from this queue.',
         submitLabel: 'Clear queue',
         icon: 'trash-2',
         variant: 'danger',

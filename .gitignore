@@ -10,3 +10,4 @@
 .DS_Store
 *.cache
 .claude
+.opencode

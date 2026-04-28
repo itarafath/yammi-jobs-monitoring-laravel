@@ -376,25 +376,6 @@
         })();
     </script>
 
-    {{-- Purge stuck jobs banner — shown only when status=processing filter is active --}}
-    @if($vm->status === 'processing' && $vm->statusCounts['processing'] > 0)
-        <div class="flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 mb-4">
-            <div class="flex items-start gap-2.5">
-                <i data-lucide="alert-triangle" class="text-[16px] mt-0.5 text-warning shrink-0"></i>
-                <div>
-                    <p class="text-sm font-medium text-warning-foreground dark:text-warning">{{ number_format($vm->statusCounts['processing']) }} job(s) currently processing</p>
-                    <p class="text-xs text-muted-foreground mt-0.5">Jobs stuck beyond the retry threshold can be marked as failed. Click Purge to see how many qualify.</p>
-                </div>
-            </div>
-            <button type="button"
-                    onclick="__jmPurgeStuck({{ json_encode(route('jobs-monitor.jobs.purge-stuck')) }}, {{ json_encode(route('jobs-monitor.jobs.purge-stuck.preview')) }})"
-                    class="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-md bg-warning text-warning-foreground hover:bg-warning/90 transition-colors shadow-xs whitespace-nowrap">
-                <i data-lucide="zap" class="text-[13px]"></i>
-                Purge stuck jobs
-            </button>
-        </div>
-    @endif
-
     {{-- ===== ALL JOBS TABLE ===== --}}
     @php
         $jSortUrl = fn(string $col) => route('jobs-monitor.dashboard', array_merge($baseParams, [
@@ -463,25 +444,6 @@
                             <td class="px-3 py-3 text-right" onclick="event.stopPropagation()">
                                 @if ($job['is_failed'])
                                     @include('jobs-monitor::partials.retry-actions', ['job' => $job, 'retryEnabled' => $vm->retryEnabled])
-                                @else
-                                    @include('jobs-monitor::partials.kebab-actions', [
-                                        'actions' => [
-                                            [
-                                                'type' => 'confirm',
-                                                'url' => route('jobs-monitor.jobs.forget', ['uuid' => $job['uuid']]),
-                                                'method' => 'POST',
-                                                'icon' => 'trash-2',
-                                                'label' => 'Delete record',
-                                                'danger' => true,
-                                                'confirm' => [
-                                                    'title' => 'Delete monitoring record?',
-                                                    'body' => 'Removes this job from the monitoring table. If the job is currently running it will complete, but won\'t update the dashboard.',
-                                                    'submitLabel' => 'Delete',
-                                                    'variant' => 'danger',
-                                                ],
-                                            ],
-                                        ],
-                                    ])
                                 @endif
                             </td>
                         </tr>
@@ -570,47 +532,5 @@
         @include('jobs-monitor::partials.bulk-script')
     @endif
 
-    @include('jobs-monitor::partials.kebab-script')
     @include('jobs-monitor::partials.confirm-modal')
-
-    <script>
-    function __jmPurgeStuck(purgeUrl, previewUrl) {
-        fetch(previewUrl, { headers: { 'Accept': 'application/json' } })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                var count = data.data ? data.data.count : '?';
-                var seconds = data.data ? data.data.older_than_seconds : 150;
-                window.__jmOpenConfirm({
-                    action: purgeUrl,
-                    method: 'POST',
-                    title: 'Purge stuck jobs?',
-                    body: count + ' job(s) have been processing longer than ' + seconds + 's and will be marked as failed.',
-                    submitLabel: 'Purge ' + count + ' job(s)',
-                    icon: 'zap',
-                    variant: 'danger',
-                });
-                var form = document.querySelector('[data-jm-confirm-form]');
-                if (form) {
-                    var el = form.querySelector('input[name="older_than"]');
-                    if (el) el.remove();
-                    var input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'older_than';
-                    input.value = seconds;
-                    form.appendChild(input);
-                }
-            })
-            .catch(function() {
-                window.__jmOpenConfirm({
-                    action: purgeUrl,
-                    method: 'POST',
-                    title: 'Purge stuck jobs?',
-                    body: 'Mark all processing jobs older than the retry threshold as failed.',
-                    submitLabel: 'Purge',
-                    icon: 'zap',
-                    variant: 'danger',
-                });
-            });
-    }
-    </script>
 @endsection

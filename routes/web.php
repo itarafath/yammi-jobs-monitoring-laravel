@@ -128,13 +128,6 @@ Route::post('/settings/playground/execute', [PlaygroundController::class, 'execu
 
 Route::post('/queue/clear', [QueueControlApiController::class, 'clearQueue'])
     ->name('jobs-monitor.queue.clear');
-Route::post('/jobs/{uuid}/forget', [QueueControlApiController::class, 'forgetJob'])
-    ->where('uuid', '[0-9a-fA-F-]+')
-    ->name('jobs-monitor.jobs.forget');
-Route::get('/jobs/purge-stuck/preview', [QueueControlApiController::class, 'purgeStuckPreview'])
-    ->name('jobs-monitor.jobs.purge-stuck.preview');
-Route::post('/jobs/purge-stuck', [QueueControlApiController::class, 'purgeStuck'])
-    ->name('jobs-monitor.jobs.purge-stuck');
 Route::post('/settings/metrics/clear', [QueueControlApiController::class, 'clearMetrics'])
     ->name('jobs-monitor.settings.metrics.clear');
 

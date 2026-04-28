@@ -10,9 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Yammi\JobsMonitor\Application\Action\ClearMetricsAction;
 use Yammi\JobsMonitor\Application\Action\ClearQueueAction;
-use Yammi\JobsMonitor\Application\Action\ForgetJobAction;
-use Yammi\JobsMonitor\Application\Action\PurgeStuckJobsAction;
-use Yammi\JobsMonitor\Domain\Job\ValueObject\JobIdentifier;
 
 /**
  * @internal
@@ -52,61 +49,6 @@ final class QueueControlApiController extends Controller
         }
 
         return redirect()->back()->with('status', $message);
-    }
-
-    // POST /jobs/{uuid}/forget
-    public function forgetJob(
-        Request $request,
-        string $uuid,
-        ForgetJobAction $action,
-    ): JsonResponse|RedirectResponse {
-        $deleted = $action(new JobIdentifier($uuid));
-
-        if ($deleted === 0) {
-            if ($request->expectsJson()) {
-                return new JsonResponse(['error' => 'No records found for this UUID.'], 404);
-            }
-
-            return redirect()->back()->with('error', 'No records found for this job.');
-        }
-
-        if ($request->expectsJson()) {
-            return new JsonResponse([
-                'data' => ['deleted' => $deleted],
-                'message' => 'Job records deleted.',
-            ]);
-        }
-
-        return redirect()->back()->with('status', 'Job records deleted.');
-    }
-
-    // GET /jobs/purge-stuck/preview
-    public function purgeStuckPreview(
-        Request $request,
-        PurgeStuckJobsAction $action,
-    ): JsonResponse {
-        $olderThan = max(1, (int) $request->query('older_than', '150'));
-
-        return new JsonResponse([
-            'data' => [
-                'count' => $action->preview($olderThan),
-                'older_than_seconds' => $olderThan,
-            ],
-        ]);
-    }
-
-    // POST /jobs/purge-stuck
-    public function purgeStuck(
-        Request $request,
-        PurgeStuckJobsAction $action,
-    ): JsonResponse {
-        $olderThan = max(1, (int) $request->input('older_than', 150));
-        $purged = $action($olderThan);
-
-        return new JsonResponse([
-            'data' => ['purged' => $purged],
-            'message' => "Marked {$purged} stuck job(s) as failed.",
-        ]);
     }
 
     // POST /metrics/clear

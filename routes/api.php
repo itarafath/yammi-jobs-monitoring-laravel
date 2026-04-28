@@ -118,12 +118,5 @@ Route::get('/workers/status-counts', [WorkersApiController::class, 'statusCounts
 
 Route::post('/queue/clear', [QueueControlApiController::class, 'clearQueue'])
     ->name('jobs-monitor.api.queue.clear');
-Route::post('/jobs/{uuid}/forget', [QueueControlApiController::class, 'forgetJob'])
-    ->where('uuid', '[0-9a-fA-F-]+')
-    ->name('jobs-monitor.api.jobs.forget');
-Route::get('/jobs/purge-stuck/preview', [QueueControlApiController::class, 'purgeStuckPreview'])
-    ->name('jobs-monitor.api.jobs.purge-stuck.preview');
-Route::post('/jobs/purge-stuck', [QueueControlApiController::class, 'purgeStuck'])
-    ->name('jobs-monitor.api.jobs.purge-stuck');
 Route::post('/metrics/clear', [QueueControlApiController::class, 'clearMetrics'])
     ->name('jobs-monitor.api.metrics.clear');
